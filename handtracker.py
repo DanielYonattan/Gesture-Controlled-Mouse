@@ -15,7 +15,7 @@ def main():
     # Create a hand landmarker instance with the live stream mode:
     def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
         print('hand landmarker result: {}'.format(result.hand_landmarks[0][0] if len(result.hand_landmarks) > 0 else result.hand_landmarks))
-
+ 
     options = HandLandmarkerOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path='../model/hand_landmarker.task'),
         running_mode=mp.tasks.vision.RunningMode.LIVE_STREAM,
