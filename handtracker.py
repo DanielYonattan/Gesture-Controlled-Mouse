@@ -17,7 +17,7 @@ def main():
         print('hand landmarker result: {}'.format(result))
 
     options = HandLandmarkerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path='../hand-tracker/model/hand_landmarker.task'),
+        base_options=mp.tasks.BaseOptions(model_asset_path='../model/hand_landmarker.task'),
         running_mode=mp.tasks.vision.RunningMode.LIVE_STREAM,
         result_callback=print_result)
 
