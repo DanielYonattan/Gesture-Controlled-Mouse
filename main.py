@@ -7,7 +7,6 @@ import cv2 as cv
 import pyautogui
 
 def main(): 
-    model_path = './../models/hand_landmarker.task'
 
     GestureRecognizer = mp.tasks.vision.GestureRecognizer
     GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
