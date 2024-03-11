@@ -14,8 +14,23 @@ def main():
 
     # Create a hand landmarker instance with the live stream mode:
     def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
-        print('hand landmarker result: {}'.format(result.hand_landmarks[0][0] if len(result.hand_landmarks) > 0 else result.hand_landmarks))
- 
+        gesture = result.gestures[0][0].category_name if len(result.gestures) > 0 else result.gestures
+        x = result.hand_landmarks[0][0].x if len(result.hand_landmarks) > 0 else result.hand_landmarks
+        y = result.hand_landmarks[0][0].y if len(result.hand_landmarks) > 0 else result.hand_landmarks
+        #print('hand landmarker result: {}'.format(result.gestures[0][0].category_name if len(result.gestures) > 0 else result.gestures))
+
+   
+        if gesture == "Pointing_Up":
+            print("up")
+        elif gesture == "Victory":
+            print("not up")
+
+        # index finger up represents mouse movement -- need to determine if index finger is up. 
+        # index finger up is 'Pointing_Up' gesture
+        
+        # index and middle finger represents click
+        # index and middle finger up is 'Victory' gesture
+    
     options = GestureRecognizerOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path='../model/gesture_recognizer.task'),
         running_mode=mp.tasks.vision.RunningMode.LIVE_STREAM,
