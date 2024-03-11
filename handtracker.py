@@ -4,6 +4,7 @@ from mediapipe.tasks.python import vision
 import time
 import numpy
 import cv2 as cv
+import pyautogui
 
 def main(): 
     model_path = './../models/hand_landmarker.task'
@@ -12,6 +13,15 @@ def main():
     GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
     GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
 
+    # calculate x and y coordinates on screen given normalized coordintes
+    def get_xy(norm_x: int, norm_y: int):
+        screen_size_x, screen_size_y = pyautogui.size()
+        x = screen_size_x * norm_x
+        y = screen_size_y * norm_y
+        pyautogui.PAUSE = 0
+        return x, y
+
+
     # Create a hand landmarker instance with the live stream mode:
     def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
         gesture = result.gestures[0][0].category_name if len(result.gestures) > 0 else result.gestures
@@ -19,11 +29,14 @@ def main():
         y = result.hand_landmarks[0][0].y if len(result.hand_landmarks) > 0 else result.hand_landmarks
         #print('hand landmarker result: {}'.format(result.gestures[0][0].category_name if len(result.gestures) > 0 else result.gestures))
 
-   
+        x, y = get_xy(x, y)
+
         if gesture == "Pointing_Up":
-            print("up")
+            pyautogui.moveTo(x, y)
         elif gesture == "Victory":
             print("not up")
+        else:
+            print("null")
 
         # index finger up represents mouse movement -- need to determine if index finger is up. 
         # index finger up is 'Pointing_Up' gesture
@@ -45,7 +58,9 @@ def main():
             # Capture the video frame by frame 
             frame_exists, frame = vid.read() 
 
-            if frame_exists:            
+            if frame_exists:    
+                # flip camera so we get a mirror image
+                frame = cv.flip(frame, 1)
                 # Display the resulting frame 
                 cv.imshow('frame', frame) 
 
