@@ -7,7 +7,6 @@ import cv2 as cv
 import pyautogui
 
 def main(): 
-
     GestureRecognizer = mp.tasks.vision.GestureRecognizer
     GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
     GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
