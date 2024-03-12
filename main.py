@@ -39,7 +39,7 @@ def main():
             pyautogui.click()
     
     options = GestureRecognizerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path='../model/gesture_recognizer.task'),
+        base_options=mp.tasks.BaseOptions(model_asset_path='./model/gesture_recognizer.task'),
         running_mode=mp.tasks.vision.RunningMode.LIVE_STREAM,
         num_hands=1,
         result_callback=move_mouse)
