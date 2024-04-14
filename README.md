@@ -1,4 +1,4 @@
-# hand-mouse
+# Gesture Controlled Mouse
 
 This script allows you to control your mouse with hand-gestures
 
