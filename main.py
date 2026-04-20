@@ -58,10 +58,14 @@ def main():
                 # Display the resulting frame 
                 cv.imshow('frame', frame) 
 
+                # convert frame from BGR to RGB
+                rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+
                 # Convert the frame received from OpenCV to a MediaPipe’s Image object.
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
 
-                landmarker.recognize_async(mp_image, mp.Timestamp.from_seconds(time.time()).value)
+                timestamp_ms = int(time.time() * 1000)
+                landmarker.recognize_async(mp_image, timestamp_ms)
             # the 'q' button is set as the quitting button
             if cv.waitKey(1) & 0xFF == ord('q'): 
                 break
