@@ -5,17 +5,24 @@ import time
 import numpy
 import cv2 as cv
 import pyautogui
+import threading
+import queue
+from collections import deque
 from utils import get_xy, move_mouse_native, click_mouse_native
+import faulthandler
+faulthandler.enable()
 
 last_click_timestamp = 0
 COOLDOWN = 500
 
-def main(): 
-    GestureRecognizer = mp.tasks.vision.GestureRecognizer
-    GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
-    GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
+frame_queue = queue.Queue(maxsize=1)
 
-    def move_mouse(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
+mouse_lock = threading.Lock()
+latest_gesture = {"gesture": None, "x": None, "y": None, "timestamp_ms": 0}
+
+GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
+
+def move_mouse(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
         global last_click_timestamp 
     
         if not result.hand_landmarks or not result.gestures:
@@ -25,21 +32,59 @@ def main():
         x = result.hand_landmarks[0][0].x if len(result.hand_landmarks) > 0 else result.hand_landmarks
         y = result.hand_landmarks[0][0].y if len(result.hand_landmarks) > 0 else result.hand_landmarks
 
+        print(f"gesture: {gesture}, x: {x}, y: {y}")
+
         x, y = get_xy(x, y)
+
+        with mouse_lock:
+            latest_gesture["gesture"] = gesture
+            latest_gesture["x"] = x
+            latest_gesture["y"] = y
+            latest_gesture["timestamp_ms"] = timestamp_ms
+
+def capture_frames(cap: cv.VideoCapture):
+    while True:
+        frame_exists, frame = cap.read()
+
+        if not frame_exists:
+            break
         
-        # index finger up represents mouse movement
-        # index finger up is 'Pointing_Up' gesture
-        if gesture == "Pointing_Up":
-            move_mouse_native(x, y)
-        
-        # index and middle finger represents click
-        # index and middle finger up is 'Victory' gesture
-        elif gesture == "Victory":
-            if (timestamp_ms - last_click_timestamp) >= COOLDOWN:
-                move_mouse_native(x, y)
-                click_mouse_native(x, y)
-                last_click_timestamp = timestamp_ms
+        frame = cv.flip(frame, 1) # mirror image
+
+        if frame_queue.full():
+            try:
+                frame_queue.get_nowait()
+            except queue.Empty:
+                pass
+        frame_queue.put(frame)
+
+def dispatch_mouse_events():
+    global last_click_timestamp
+    try:
+        while True:
+            with mouse_lock:
+                gesture = latest_gesture["gesture"]
+                x = latest_gesture["x"]
+                y = latest_gesture["y"]
+                timestamp_ms = latest_gesture["timestamp_ms"]
             
+            if gesture and x is not None and y is not None:
+                if gesture == "Pointing_Up":
+                    move_mouse_native(x, y)
+                elif gesture == "Victory":
+                    if (timestamp_ms - last_click_timestamp) >= COOLDOWN:
+                        move_mouse_native(x, y)
+                        click_mouse_native(x, y)
+                        last_click_timestamp = timestamp_ms
+            
+            time.sleep(0.005)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+
+def main(): 
+    GestureRecognizer = mp.tasks.vision.GestureRecognizer
+    GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
     
     options = GestureRecognizerOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path='./model/gesture_recognizer.task'),
@@ -47,34 +92,36 @@ def main():
         num_hands=1,
         result_callback=move_mouse)
 
-    with GestureRecognizer.create_from_options(options) as landmarker:
-    # Use OpenCV’s VideoCapture to start capturing from the webcam.
-        vid = cv.VideoCapture(0)
+    cap = cv.VideoCapture(0)
+    
+    capture_thread = threading.Thread(target=capture_frames, args=(cap,), daemon=True)
+    mouse_thread = threading.Thread(target=dispatch_mouse_events, daemon=True)
 
+    capture_thread.start()
+    mouse_thread.start()
+
+    with GestureRecognizer.create_from_options(options) as recognizer:
+    # Use OpenCV’s VideoCapture to start capturing from the webcam.
         while(True): 
             # Capture the video frame by frame 
-            frame_exists, frame = vid.read() 
+            try:
+                frame = frame_queue.get(timeout=1.0)
+            except queue.Empty:
+                continue
 
-            if frame_exists:    
-                # flip camera so we get a mirror image
-                frame = cv.flip(frame, 1)
-                # Display the resulting frame 
-                cv.imshow('frame', frame) 
+            rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            timestamp_ms = int(time.time() * 1000)
+            recognizer.recognize_async(mp_image, timestamp_ms)
 
-                # convert frame from BGR to RGB
-                rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            cv.imshow('frame', frame) 
 
-                # Convert the frame received from OpenCV to a MediaPipe’s Image object.
-                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
-
-                timestamp_ms = int(time.time() * 1000)
-                landmarker.recognize_async(mp_image, timestamp_ms)
             # the 'q' button is set as the quitting button
             if cv.waitKey(1) & 0xFF == ord('q'): 
                 break
 
         # After the loop release the cap object 
-        vid.release() 
+        cap.release() 
         # Destroy all the windows 
         cv.destroyAllWindows() 
 
