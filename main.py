@@ -60,27 +60,25 @@ def capture_frames(cap: cv.VideoCapture):
 
 def dispatch_mouse_events():
     global last_click_timestamp
-    try:
-        while True:
-            with mouse_lock:
-                gesture = latest_gesture["gesture"]
-                x = latest_gesture["x"]
-                y = latest_gesture["y"]
-                timestamp_ms = latest_gesture["timestamp_ms"]
-            
-            if gesture and x is not None and y is not None:
-                if gesture == "Pointing_Up":
+
+    while True:
+        with mouse_lock:
+            gesture = latest_gesture["gesture"]
+            x = latest_gesture["x"]
+            y = latest_gesture["y"]
+            timestamp_ms = latest_gesture["timestamp_ms"]
+        
+        if gesture and x is not None and y is not None:
+            if gesture == "Pointing_Up":
+                move_mouse_native(x, y)
+            elif gesture == "Victory":
+                if (timestamp_ms - last_click_timestamp) >= COOLDOWN:
                     move_mouse_native(x, y)
-                elif gesture == "Victory":
-                    if (timestamp_ms - last_click_timestamp) >= COOLDOWN:
-                        move_mouse_native(x, y)
-                        click_mouse_native(x, y)
-                        last_click_timestamp = timestamp_ms
-            
-            time.sleep(0.005)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+                    click_mouse_native(x, y)
+                    last_click_timestamp = timestamp_ms
+        
+        time.sleep(0.005)
+
 
 def main(): 
     GestureRecognizer = mp.tasks.vision.GestureRecognizer
