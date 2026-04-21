@@ -32,8 +32,6 @@ def move_mouse(result: GestureRecognizerResult, output_image: mp.Image, timestam
         x = result.hand_landmarks[0][0].x if len(result.hand_landmarks) > 0 else result.hand_landmarks
         y = result.hand_landmarks[0][0].y if len(result.hand_landmarks) > 0 else result.hand_landmarks
 
-        print(f"gesture: {gesture}, x: {x}, y: {y}")
-
         x, y = get_xy(x, y)
 
         with mouse_lock:
