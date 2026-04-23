@@ -97,9 +97,7 @@ def main():
     mouse_thread.start()
 
     with GestureRecognizer.create_from_options(options) as recognizer:
-    # Use OpenCV’s VideoCapture to start capturing from the webcam.
         while(True): 
-            # Capture the video frame by frame 
             try:
                 frame = frame_queue.get(timeout=1.0)
             except queue.Empty:
@@ -116,9 +114,7 @@ def main():
             if cv.waitKey(1) & 0xFF == ord('q'): 
                 break
 
-        # After the loop release the cap object 
         cap.release() 
-        # Destroy all the windows 
         cv.destroyAllWindows() 
 
 
